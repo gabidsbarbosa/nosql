@@ -1,3 +1,9 @@
+# ignorar os arquivos de config
+
+mongodb/config.py
+redis/config.py
+ex1/config.py
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
