@@ -8,36 +8,41 @@ redis_client = redis.Redis(
     password=REDIS_CONFIG["password"]
 )
 
-def create_favorito():
-    print("\nInserir novo favorito")
-    cpf_usuario = input("CPF do usuário: ")
+def create_favorito(cpf):
+    print("\nAdicionar novo favorito")
     nome_produto = input("Nome do produto favorito: ")
-    nome_loja = input("Nome da loja do produto favorito: ")
+    cnpj_vendedor = input("CNPJ do vendedor: ")
 
     favorito_data = {
-        "cpf_usuario": cpf_usuario,
+        "cpf_cliente": cpf,
         "nome_produto": nome_produto,
-        "nome_loja": nome_loja
+        "cnpj_vendedor": cnpj_vendedor
     }
 
-    redis_client.sadd(f"favoritos:{cpf_usuario}", json.dumps(favorito_data))
+    favoritos_key = f"favorito:{cpf}"
+    
+    # Exclui a chave existente (se houver)
+    redis_client.delete(favoritos_key)
+    
+    # Adiciona o novo hash
+    redis_client.hset(favoritos_key, nome_produto, json.dumps(favorito_data))
 
     print("Favorito adicionado com sucesso.")
 
-def read_favoritos():
-    cpf_usuario = input("Digite o CPF do usuário: ")
-
-    favoritos_data = redis_client.smembers(f"favoritos:{cpf_usuario}")
+def read_favoritos(cpf):
+    favoritos_key = f"favorito:{cpf}"
+    favoritos_data = redis_client.hgetall(favoritos_key)
 
     if favoritos_data:
-        print("Favoritos do usuário:")
-        for favorito_json in favoritos_data:
-            favorito_data = json.loads(favorito_json)
-            print(json.dumps(favorito_data, indent=4))
+        print(f"Favoritos para o CPF {cpf}:")
+        for produto, favorito_json in favoritos_data.items():
+            favorito = json.loads(favorito_json)
+            print(f"\nProduto: {produto}")
+            print(json.dumps(favorito, indent=4))
     else:
-        print("Nenhum favorito encontrado.")
+        print("Nenhum favorito encontrado para este CPF.")
 
-def update_favorito():
+def update_favorito(cpf):
     cpf_usuario = input("Digite o CPF do usuário: ")
     nome_produto = input("Digite o nome do produto favorito que deseja atualizar: ")
     nome_loja = input("Digite o nome da loja do produto favorito que deseja atualizar: ")
@@ -57,18 +62,25 @@ def update_favorito():
     else:
         print("Favorito não encontrado.")
 
-def delete_favorito():
-    cpf_usuario = input("Digite o CPF do usuário: ")
-    nome_produto = input("Digite o nome do produto favorito que deseja excluir: ")
-    nome_loja = input("Digite o nome da loja do produto favorito que deseja excluir: ")
+def delete_favorito(cpf):
+    favorito_key = f"favoritos:{cpf}"
 
-    favorito_key = f"favoritos:{cpf_usuario}"
-    favorito_data_json = redis_client.spop(favorito_key)
+    nome_produto = input("Digite o nome do produto favorito que deseja excluir: ")
+    cnpj_vendedor = input("Digite o nome da loja do produto favorito que deseja excluir: ")
+
+    favorito_data = {
+        "nome_produto": nome_produto,
+        "cnpj_vendedor": cnpj_vendedor
+    }
+
+    favorito_data_json = redis_client.hget(favorito_key, nome_produto)
 
     if favorito_data_json:
-        print(f"Favorito removido com sucesso: {favorito_data_json}")
+        redis_client.hdel(favorito_key, nome_produto)
+        print("Favorito excluído com sucesso.")
     else:
         print("Favorito não encontrado.")
+
 
 def menu_favoritos(cpf):
     while True:

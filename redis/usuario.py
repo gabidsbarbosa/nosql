@@ -1,6 +1,10 @@
-import json
 import redis
+import time
+import json
+from compras import menu_compras
+
 from config import REDIS_CONFIG
+from favoritos import menu_favoritos
 
 redis_client = redis.Redis(
     host=REDIS_CONFIG["host"],
@@ -14,21 +18,21 @@ def create_usuario():
     sobrenome = input("Sobrenome: ")
     cpf = input("CPF: ")
     data_nascimento = input("Data de nascimento: ")
+    senha = input("Senha: ")
 
     user_data = {
         "nome": nome,
         "sobrenome": sobrenome,
         "cpf": cpf,
-        "data de nascimento": data_nascimento
+        "data de nascimento": data_nascimento,
+        "senha": senha
     }
 
     redis_client.set(f"usuario:{cpf}", json.dumps(user_data))
 
     print("Usuário cadastrado com sucesso.")
 
-def read_usuario():
-    cpf = input("Digite o CPF do usuário: ")
-
+def read_usuario(cpf):
     user_data_json = redis_client.get(f"usuario:{cpf}")
 
     if user_data_json:
@@ -65,6 +69,32 @@ def delete_usuario(cpf):
     redis_client.delete(f"usuario:{cpf}")
     print("Usuário deletado com sucesso.")
 
+def login_usuario():
+    print("\n\033[1mLogin\033[0m")
+    cpf = input("Digite o CPF: ")
+    senha = input("Digite a senha: ")
+
+    user_data_json = redis_client.get(f"usuario:{cpf}")
+
+    if user_data_json:
+        user_data = json.loads(user_data_json)
+        
+        if senha == user_data.get("senha"):
+            print("Login bem-sucedido.")
+            
+            chave_redis = f"usuario:{cpf}"
+            redis_client.expire(chave_redis, 10)
+            
+            while redis_client.exists(chave_redis):
+                print("Você está autenticado.")
+                time.sleep(1) 
+
+            print("Sessão expirada. Você foi desconectado.")
+        else:
+            print("Login ou senha inválidos.")
+    else:
+        print("Usuário não encontrado.")
+
 def menu_usuario():
     while True:
         print("\n\033[1mMenu Usuário:\033[0m")
@@ -72,7 +102,10 @@ def menu_usuario():
         print("2 - Ler Usuário")
         print("3 - Atualizar Usuário")
         print("4 - Deletar Usuário")
-        print("\nV - Voltar")
+        print("\033[1mL - Login\033[0m")
+        print("\033[1mC - Menu Compras\033[0m")
+        print("\033[1mF - Menu Favoritos\033[0m")
+        print("V - Voltar")
 
         sub = input("Digite a opção desejada: ").upper()
 
@@ -83,7 +116,8 @@ def menu_usuario():
             create_usuario()
 
         elif sub == '2':
-            read_usuario()
+            cpf = input("Digite o CPF do usuário: ")
+            read_usuario(cpf)
 
         elif sub == '3':
             cpf = input("Atualizar usuário, qual o CPF? ")
@@ -92,3 +126,15 @@ def menu_usuario():
         elif sub == '4':
             cpf = input("Deletar Usuário, qual o CPF? ")
             delete_usuario(cpf)
+
+        elif sub == 'L':
+            login_usuario()
+
+        elif sub == 'C':
+            cpf = input("Digite o CPF do usuário: ")
+            menu_compras(cpf)
+
+        elif sub == 'F':
+            cpf = input("Digite o CPF do usuário: ")
+            menu_favoritos(cpf)
+

@@ -2,18 +2,16 @@ import json
 import redis
 from config import REDIS_CONFIG
 
-
 redis_client = redis.Redis(
     host=REDIS_CONFIG["host"],
     port=REDIS_CONFIG["port"],
     password=REDIS_CONFIG["password"]
 )
 
-def create_produto():
+def create_produto(cnpj_vendedor):
     print("\nInserir novo produto")
     nome_produto = input("Nome do produto: ")
     preco = input("Preço do produto: ")
-    cnpj_vendedor = input("CNPJ do vendedor: ")
 
     produto_data = {
         "nome_produto": nome_produto,
@@ -25,7 +23,7 @@ def create_produto():
 
     print("Produto cadastrado com sucesso.")
 
-def read_produto():
+def read_produto(cnpj_vendedor):
     nome_produto = input("Digite o nome do produto: ")
 
     produto_data_json = redis_client.get(f"produto:{nome_produto}")
@@ -37,7 +35,7 @@ def read_produto():
     else:
         print("Produto não encontrado.")
 
-def update_produto():
+def update_produto(cnpj_vendedor):
     nome_produto = input("Digite o nome do produto que deseja atualizar: ")
 
     produto_data_json = redis_client.get(f"produto:{nome_produto}")
@@ -53,7 +51,7 @@ def update_produto():
     else:
         print("Produto não encontrado.")
 
-def delete_produto():
+def delete_produto(cnpj_vendedor):
     nome_produto = input("Digite o nome do produto que deseja excluir: ")
 
     produto_data_json = redis_client.get(f"produto:{nome_produto}")
